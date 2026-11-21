@@ -1,0 +1,401 @@
+# Copyright (C) 2026 W System
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: W System E-Invoice for WooCommerce 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-e-invoice\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-21T12:03:34+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: w-system-e-invoice\n"
+
+#. Plugin Name of the plugin
+#: w-system-e-invoice.php
+msgid "W System E-Invoice for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: w-system-e-invoice.php
+msgid "https://wsystem.dev/woocommerce-xrechnung"
+msgstr ""
+
+#. Description of the plugin
+#: w-system-e-invoice.php
+msgid "Creates XRechnung 3.0 and EN 16931 e-invoices (UBL) for WooCommerce orders, validates them against the official rule sets, attaches them to customer emails and can send them over Peppol."
+msgstr ""
+
+#. Author of the plugin
+#: w-system-e-invoice.php
+msgid "W System"
+msgstr ""
+
+#. Author URI of the plugin
+#: w-system-e-invoice.php
+msgid "https://wsystem.dev"
+msgstr ""
+
+#: includes/class-wsei-admin.php:36
+msgid "E-invoice"
+msgstr ""
+
+#: includes/class-wsei-admin.php:80
+#: includes/class-wsei-admin.php:194
+msgid "No e-invoice yet."
+msgstr ""
+
+#: includes/class-wsei-admin.php:85
+msgid "Valid (EN 16931 and XRechnung rules)"
+msgstr ""
+
+#: includes/class-wsei-admin.php:85
+msgid "Valid (EN 16931 rules)"
+msgstr ""
+
+#: includes/class-wsei-admin.php:88
+msgid "Failed validation"
+msgstr ""
+
+#: includes/class-wsei-admin.php:106
+msgid "Download XML"
+msgstr ""
+
+#: includes/class-wsei-admin.php:109
+msgid "Last attempt failed:"
+msgstr ""
+
+#: includes/class-wsei-admin.php:111
+msgid "Create e-invoice"
+msgstr ""
+
+#: includes/class-wsei-admin.php:111
+msgid "Create again"
+msgstr ""
+
+#: includes/class-wsei-admin.php:116
+msgid "Send via Peppol (sandbox test)"
+msgstr ""
+
+#: includes/class-wsei-admin.php:116
+msgid "Send via Peppol"
+msgstr ""
+
+#: includes/class-wsei-admin.php:120
+msgid "Peppol:"
+msgstr ""
+
+#: includes/class-wsei-admin.php:130
+msgid "Buyer reference (Leitweg-ID for public sector)"
+msgstr ""
+
+#: includes/class-wsei-admin.php:132
+msgid "Saved with the order. Create the e-invoice again after changing it."
+msgstr ""
+
+#: includes/class-wsei-admin.php:164
+msgid "Create e-invoice (XRechnung / EN 16931)"
+msgstr ""
+
+#: includes/class-wsei-admin.php:185
+msgid "You are not allowed to do this."
+msgstr ""
+
+#: includes/class-wsei-admin.php:189
+msgid "Order not found."
+msgstr ""
+
+#: includes/class-wsei-admin.php:205
+msgid "E-invoice created and valid."
+msgstr ""
+
+#: includes/class-wsei-admin.php:205
+msgid "E-invoice created but not valid; see the E-invoice box."
+msgstr ""
+
+#: includes/class-wsei-api.php:74
+msgid "The free daily quota of the W System API is used up. Add an API key in the settings or try again tomorrow."
+msgstr ""
+
+#. translators: 1: HTTP status code, 2: error detail from the API
+#: includes/class-wsei-api.php:85
+#, php-format
+msgid "W System API error %1$d: %2$s"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wsei-invoices.php:73
+#, php-format
+msgid "E-invoice could not be created: %s"
+msgstr ""
+
+#. translators: 1: e-invoice total, 2: order total
+#: includes/class-wsei-invoices.php:94
+#, php-format
+msgid "The e-invoice total (%1$s) differs from the order total (%2$s), usually by rounding. Check the tax rounding settings."
+msgstr ""
+
+#. translators: %s: format name
+#: includes/class-wsei-invoices.php:108
+#, php-format
+msgid "E-invoice (%s) created and passed validation."
+msgstr ""
+
+#. translators: 1: format name, 2: number of errors
+#: includes/class-wsei-invoices.php:111
+#, php-format
+msgid "E-invoice (%1$s) created but failed validation with %2$d error(s). See the E-invoice box on the order."
+msgstr ""
+
+#: includes/class-wsei-invoices.php:131
+msgid "Peppol sending is off in the settings."
+msgstr ""
+
+#. translators: %s: receipt id
+#: includes/class-wsei-invoices.php:161
+#, php-format
+msgid "Peppol sandbox send simulated (nothing delivered). Receipt %s."
+msgstr ""
+
+#. translators: 1: status, 2: receipt id
+#: includes/class-wsei-invoices.php:163
+#, php-format
+msgid "Peppol send: %1$s. Receipt %2$s."
+msgstr ""
+
+#. translators: %s: reason
+#: includes/class-wsei-invoices.php:166
+#, php-format
+msgid "Peppol send refused: %s"
+msgstr ""
+
+#. translators: 1: quantity, 2: item name
+#: includes/class-wsei-mapper.php:142
+#, php-format
+msgid "%1$s x %2$s"
+msgstr ""
+
+#. translators: %s: shipping method name
+#: includes/class-wsei-mapper.php:196
+#, php-format
+msgid "Shipping: %s"
+msgstr ""
+
+#. translators: 1: payment method title, 2: payment date
+#: includes/class-wsei-mapper.php:279
+#, php-format
+msgid "Paid via %1$s %2$s"
+msgstr ""
+
+#: includes/class-wsei-mapper.php:305
+msgid "No VAT charged under the small business scheme (section 19 UStG)."
+msgstr ""
+
+#: includes/class-wsei-settings.php:84
+msgid "E-Invoice"
+msgstr ""
+
+#: includes/class-wsei-settings.php:109
+msgid "E-invoices (XRechnung / EN 16931)"
+msgstr ""
+
+#. translators: %s: link to the free API key page
+#: includes/class-wsei-settings.php:113
+#, php-format
+msgid "Creates a structured e-invoice (UBL XML) for each order through the W System API and checks it against the official EN 16931 and XRechnung rules. Without an API key the free tier allows 20 calls per day per server IP address. %s"
+msgstr ""
+
+#: includes/class-wsei-settings.php:114
+msgid "Get a free API key"
+msgstr ""
+
+#: includes/class-wsei-settings.php:118
+msgid "API key (optional)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:118
+msgid "Raises the quota and is required for live Peppol sending."
+msgstr ""
+
+#: includes/class-wsei-settings.php:121
+msgid "Format"
+msgstr ""
+
+#: includes/class-wsei-settings.php:125
+msgid "XRechnung 3.0 (UBL), Germany"
+msgstr ""
+
+#: includes/class-wsei-settings.php:126
+msgid "EN 16931 (UBL), EU standard"
+msgstr ""
+
+#: includes/class-wsei-settings.php:127
+msgid "Peppol BIS Billing 3.0 (UBL)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:133
+msgid "Create automatically"
+msgstr ""
+
+#: includes/class-wsei-settings.php:137
+msgid "When the order is completed"
+msgstr ""
+
+#: includes/class-wsei-settings.php:138
+msgid "When the order is processing (paid)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:139
+msgid "Never (manual only)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:143
+msgid "Business customers only"
+msgstr ""
+
+#: includes/class-wsei-settings.php:143
+msgid "Create automatically only when the billing company or a VAT number is set."
+msgstr ""
+
+#: includes/class-wsei-settings.php:144
+msgid "Attach to customer emails"
+msgstr ""
+
+#: includes/class-wsei-settings.php:144
+msgid "Attach the XML to the \"Completed order\" and \"Customer invoice\" emails when it passed validation."
+msgstr ""
+
+#: includes/class-wsei-settings.php:150
+msgid "Seller (your company)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:152
+msgid "XRechnung requires a seller contact with name, phone and email. EN 16931 requires a VAT ID or, without one, a registration number."
+msgstr ""
+
+#: includes/class-wsei-settings.php:155
+msgid "Company name"
+msgstr ""
+
+#: includes/class-wsei-settings.php:156
+msgid "VAT ID"
+msgstr ""
+
+#: includes/class-wsei-settings.php:157
+msgid "Tax number"
+msgstr ""
+
+#: includes/class-wsei-settings.php:157
+msgid "Only needed if you have no VAT ID."
+msgstr ""
+
+#: includes/class-wsei-settings.php:158
+msgid "Registration number"
+msgstr ""
+
+#: includes/class-wsei-settings.php:158
+msgid "Commercial register number. Required by EN 16931 when you have no VAT ID."
+msgstr ""
+
+#: includes/class-wsei-settings.php:159
+msgid "Small business (no VAT charged)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:159
+msgid "You charge no VAT under a small business scheme (for example Kleinunternehmerregelung, section 19 UStG). Lines are marked VAT exempt (category E) with that reason."
+msgstr ""
+
+#: includes/class-wsei-settings.php:160
+msgid "Street"
+msgstr ""
+
+#: includes/class-wsei-settings.php:161
+msgid "Postcode"
+msgstr ""
+
+#: includes/class-wsei-settings.php:162
+msgid "City"
+msgstr ""
+
+#: includes/class-wsei-settings.php:163
+msgid "Country code"
+msgstr ""
+
+#: includes/class-wsei-settings.php:164
+msgid "Contact name"
+msgstr ""
+
+#: includes/class-wsei-settings.php:165
+msgid "Phone"
+msgstr ""
+
+#: includes/class-wsei-settings.php:166
+msgid "Email"
+msgstr ""
+
+#: includes/class-wsei-settings.php:167
+msgid "IBAN"
+msgstr ""
+
+#: includes/class-wsei-settings.php:167
+msgid "Used for orders paid by bank transfer."
+msgstr ""
+
+#: includes/class-wsei-settings.php:168
+msgid "BIC"
+msgstr ""
+
+#: includes/class-wsei-settings.php:169
+msgid "Payment terms"
+msgstr ""
+
+#: includes/class-wsei-settings.php:169
+msgid "Payable within 14 days"
+msgstr ""
+
+#: includes/class-wsei-settings.php:175
+msgid "Peppol"
+msgstr ""
+
+#: includes/class-wsei-settings.php:177
+msgid "Optional. Sandbox runs the whole send flow (VAT, Peppol and sanctions checks, validation) but transmits nothing. Live sending needs an API key, a Peppol mandate for your VAT ID and an approved W System account; the API tells you what is missing."
+msgstr ""
+
+#: includes/class-wsei-settings.php:182
+msgid "Peppol sending"
+msgstr ""
+
+#: includes/class-wsei-settings.php:186
+msgid "Off"
+msgstr ""
+
+#: includes/class-wsei-settings.php:187
+msgid "Sandbox (test, nothing is delivered)"
+msgstr ""
+
+#: includes/class-wsei-settings.php:188
+msgid "Live"
+msgstr ""
+
+#: includes/class-wsei-settings.php:192
+msgid "Send automatically"
+msgstr ""
+
+#: includes/class-wsei-settings.php:192
+msgid "Send each automatically created, valid e-invoice of a business customer over Peppol."
+msgstr ""
+
+#: includes/class-wsei-settings.php:193
+msgid "Buyer VAT ID order fields"
+msgstr ""
+
+#: includes/class-wsei-settings.php:193
+msgid "Comma-separated order meta keys searched for the customer VAT ID (other VAT plugins)."
+msgstr ""
+
+#: w-system-e-invoice.php:67
+msgid "Settings"
+msgstr ""
