@@ -59,7 +59,7 @@ For a Peppol send the API checks the customer's VAT ID with the European Commiss
 
 = Do I need an API key? =
 
-No. Without a key the W System API free tier allows 20 calls per day per server IP address, enough to try the plugin and for small shops. For more, get a free API key (email only, no card) at https://api.wsystem.dev/account/free-key?ref=woo-einvoice. Paid plans for higher volume: https://wsystem.dev/pricing.
+No. Without a key the W System API free tier allows 20 calls per day per server IP address, enough to try the plugin and for small shops. For more, get a free API key (email only, no card) at https://api.wsystem.dev/account/free-key?ref=woo-einvoice. Free for 50 invoices a month, then from €12 a month (150, 750 or 2,000 invoices): https://wsystem.dev/online-shops.
 
 = Is XRechnung accepted for B2B invoices in Germany? =
 

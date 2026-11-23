@@ -4,6 +4,7 @@ WordPress plugin that creates **XRechnung 3.0** and **EN 16931** e-invoices (UBL
 
 * Landing page and guide: https://wsystem.dev/woocommerce-xrechnung (German: https://wsystem.dev/de/woocommerce-xrechnung)
 * Settings: WooCommerce > Settings > E-Invoice
+* Free for 50 invoices a month, then from €12 (shop plans: https://wsystem.dev/online-shops).
 * Free tier: 20 API calls per day per server IP, no key. Free API key: https://api.wsystem.dev/account/free-key?ref=woo-einvoice
 
 ## Features
