@@ -42,13 +42,6 @@ add_action(
 );
 
 add_action(
-	'init',
-	function () {
-		load_plugin_textdomain( 'w-system-e-invoice', false, dirname( plugin_basename( WSEI_FILE ) ) . '/languages' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
-	}
-);
-
-add_action(
 	'plugins_loaded',
 	function () {
 		if ( ! class_exists( 'WooCommerce' ) ) {

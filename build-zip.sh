@@ -17,7 +17,8 @@ fi
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/$SLUG"
-cp -r w-system-e-invoice.php uninstall.php readme.txt LICENSE.txt includes languages "$TMP/$SLUG/"
+cp -r w-system-e-invoice.php uninstall.php readme.txt LICENSE.txt includes "$TMP/$SLUG/"
+mkdir -p "$TMP/$SLUG/languages" && cp languages/*.pot "$TMP/$SLUG/languages/"  # .po/.mo come from translate.wordpress.org
 
 if [ "$ZIPPER" = zip ]; then
   (cd "$TMP" && zip -qr "$SLUG.zip" "$SLUG")

@@ -202,7 +202,11 @@ class WSEI_Invoices {
 		if ( '' === $xml || 'yes' !== $order->get_meta( '_wsei_valid' ) ) {
 			return $attachments;
 		}
-		$dir = trailingslashit( get_temp_dir() ) . 'wsei-' . wp_generate_password( 12, false );
+		$base = self::private_dir();
+		if ( '' === $base ) {
+			return $attachments;
+		}
+		$dir = $base . '/tmp-' . wp_generate_password( 20, false );
 		if ( ! wp_mkdir_p( $dir ) ) {
 			return $attachments;
 		}
@@ -212,6 +216,34 @@ class WSEI_Invoices {
 			$attachments[] = $path;
 		}
 		return $attachments;
+	}
+
+	/**
+	 * Private, access-protected folder in the uploads directory for short-lived email attachments.
+	 *
+	 * @return string Absolute path without trailing slash, or '' on failure.
+	 */
+	private static function private_dir() {
+		$uploads = wp_upload_dir( null, false );
+		if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return '';
+		}
+		$base = trailingslashit( $uploads['basedir'] ) . 'w-system-e-invoice';
+		if ( ! wp_mkdir_p( $base ) ) {
+			return '';
+		}
+		$guards = array(
+			'.htaccess'  => "Require all denied\nDeny from all\n",
+			'index.php'  => "<?php\n// Silence is golden.\n",
+			'index.html' => '',
+			'web.config' => '<?xml version="1.0" encoding="UTF-8"?><configuration><system.webServer><authorization><deny users="*" /></authorization></system.webServer></configuration>',
+		);
+		foreach ( $guards as $name => $content ) {
+			if ( ! file_exists( $base . '/' . $name ) ) {
+				file_put_contents( $base . '/' . $name, $content ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			}
+		}
+		return $base;
 	}
 
 	/**
