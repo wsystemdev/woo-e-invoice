@@ -4,7 +4,7 @@ Tags: xrechnung, e-invoice, e-rechnung, peppol, en 16931
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,10 @@ Only if you turn it on. Sandbox mode runs the whole flow, including the VAT and 
 2. Settings: format, automation, seller details and Peppol.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fix: shipping and fees taxed at several VAT rates (e.g. split shipping tax with German-market plugins) are now one line per rate; they were written as one line at the sum of the rates (19 % + 7 % = 26 %).
+* Prices incl. VAT: the e-invoice total now equals the order total. Per-line tax rounding is reconciled per VAT rate; where no net amount can reach the VAT WooCommerce charged, it is sent as vat_amounts (used by the W System API once supported, ignored before).
 
 = 1.0.0 =
 * First release: XRechnung 3.0, EN 16931 and Peppol BIS 3 (UBL) from WooCommerce orders, official rule validation, email attachment, download, Leitweg-ID, optional Peppol sending (sandbox and live).

@@ -127,6 +127,87 @@ class WSEI_Mapper {
 	 * @param string $sku  Seller item id.
 	 * @return array
 	 */
+	/**
+	 * Raw lines for one order item, one per VAT rate (BET3). WooCommerce stores one net total per item and a tax amount per rate id;
+	 * shipping and fees split over several rates (German-market plugins, "based on cart items") used to be summed into one line
+	 * at the SUM of the rates (e.g. 19 % + 7 % = 26 %). Now each rate gets its own line; the net is split by the tax shares.
+	 */
+	private static function raw_lines( $desc, $qty, $item, array $rates, array $ctx, $sku = '' ) {
+		$net   = round( (float) $item->get_total(), 2 );
+		$taxes = $item->get_taxes();
+		$parts = array();
+		if ( ! empty( $taxes['total'] ) ) {
+			foreach ( $taxes['total'] as $rate_id => $amount ) {
+				if ( '' !== $amount && null !== $amount && isset( $rates[ (int) $rate_id ] ) && $rates[ (int) $rate_id ] > 0 ) {
+					$parts[] = array( (float) $rates[ (int) $rate_id ], round( (float) $amount, 2 ) );
+				}
+			}
+		}
+		if ( count( $parts ) <= 1 ) {
+			$vat = self::vat_of( $item, $rates, $ctx );
+			$tax = 1 === count( $parts ) ? $parts[0][1] : round( (float) $item->get_total_tax(), 2 );
+			return array( array( 'desc' => $desc, 'qty' => $qty, 'net' => $net, 'tax' => 'S' === $vat[0] ? $tax : 0.0, 'cat' => $vat[0], 'rate' => $vat[1], 'sku' => $sku ) );
+		}
+		$sum_est = 0.0;
+		foreach ( $parts as $p ) {
+			$sum_est += $p[1] / ( $p[0] / 100 );
+		}
+		$out  = array();
+		$left = $net;
+		foreach ( $parts as $i => $p ) {
+			$n     = count( $parts ) - 1 === $i ? round( $left, 2 ) : round( $net * ( $p[1] / ( $p[0] / 100 ) ) / ( $sum_est ? $sum_est : 1 ), 2 );
+			$left -= $n;
+			$out[] = array( 'desc' => $desc . ' (' . wc_format_decimal( $p[0] ) . ' %)', 'qty' => 1, 'net' => $n, 'tax' => $p[1], 'cat' => 'S', 'rate' => round( $p[0], 2 ), 'sku' => $sku );
+		}
+		return $out;
+	}
+
+	/**
+	 * BET3: per VAT rate, the API computes VAT as base x rate; WooCommerce rounds tax per line. Where they differ by cents, first try
+	 * a net within 3 cents on the last line of that rate that gives the same gross (works with every API version); otherwise send the
+	 * VAT WooCommerce charged as vat_amounts (used once the W System API supports it, ignored before). Keeps the e-invoice total
+	 * equal to the order total.
+	 */
+	private static function reconcile( array $raw ) {
+		$groups = array();
+		foreach ( $raw as $i => $l ) {
+			if ( 'S' === $l['cat'] ) {
+				$groups[ (string) $l['rate'] ][] = $i;
+			}
+		}
+		$va  = array();
+		$tol = max( 0.01, round( 0.005 * count( $raw ), 2 ) );
+		foreach ( $groups as $rate => $idx ) {
+			$r   = (float) $rate;
+			$net = 0.0;
+			$tax = 0.0;
+			foreach ( $idx as $i ) {
+				$net += $raw[ $i ]['net'];
+				$tax += $raw[ $i ]['tax'];
+			}
+			$net   = round( $net, 2 );
+			$tax   = round( $tax, 2 );
+			$gross = round( $net + $tax, 2 );
+			if ( abs( round( $net * $r / 100, 2 ) - $tax ) < 0.001 ) {
+				continue;
+			}
+			$best = null;
+			for ( $d = -3; $d <= 3; ++$d ) {
+				$n = round( $net + $d / 100, 2 );
+				if ( abs( round( $n + round( $n * $r / 100, 2 ), 2 ) - $gross ) < 0.001 && ( null === $best || abs( $d ) < abs( $best ) ) ) {
+					$best = $d;
+				}
+			}
+			if ( null !== $best ) {
+				$last                 = end( $idx );
+				$raw[ $last ]['net'] = round( $raw[ $last ]['net'] + $best / 100, 2 );
+			} elseif ( abs( round( $net * $r / 100, 2 ) - $tax ) <= $tol + 0.0001 ) {
+				$va[] = array( 'vat_category' => 'S', 'vat_rate' => $r, 'tax_amount' => $tax );
+			}
+		}
+		return array( $raw, $va );
+	}
+
 	private static function line( $desc, $qty, $net, array $vat, $sku = '' ) {
 		$qty = (float) $qty;
 		$net = round( (float) $net, 2 );
@@ -183,23 +264,31 @@ class WSEI_Mapper {
 		$rates = self::rates( $order );
 		$lines = array();
 
+		$raw = array();
 		foreach ( $order->get_items( 'line_item' ) as $item ) {
 			$product = $item->get_product();
 			$sku     = $product ? (string) $product->get_sku() : '';
-			$lines[] = self::line( $item->get_name(), $item->get_quantity(), $item->get_total(), self::vat_of( $item, $rates, $ctx ), $sku );
+			$raw     = array_merge( $raw, self::raw_lines( $item->get_name(), $item->get_quantity(), $item, $rates, $ctx, $sku ) );
 		}
 		foreach ( $order->get_items( 'shipping' ) as $item ) {
 			if ( 0.0 === round( (float) $item->get_total(), 2 ) ) {
 				continue;
 			}
 			/* translators: %s: shipping method name */
-			$lines[] = self::line( sprintf( __( 'Shipping: %s', 'w-system-e-invoice' ), $item->get_name() ), 1, $item->get_total(), self::vat_of( $item, $rates, $ctx ) );
+			$raw = array_merge( $raw, self::raw_lines( sprintf( __( 'Shipping: %s', 'w-system-e-invoice' ), $item->get_name() ), 1, $item, $rates, $ctx ) );
 		}
 		foreach ( $order->get_items( 'fee' ) as $item ) {
 			if ( 0.0 === round( (float) $item->get_total(), 2 ) ) {
 				continue;
 			}
-			$lines[] = self::line( $item->get_name(), 1, $item->get_total(), self::vat_of( $item, $rates, $ctx ) );
+			$raw = array_merge( $raw, self::raw_lines( $item->get_name(), 1, $item, $rates, $ctx ) );
+		}
+		$vat_amounts = array();
+		if ( ! $small ) {
+			list( $raw, $vat_amounts ) = self::reconcile( $raw );
+		}
+		foreach ( $raw as $r ) {
+			$lines[] = self::line( $r['desc'], $r['qty'], $r['net'], array( $r['cat'], $r['rate'] ), $r['sku'] );
 		}
 		if ( $small ) {
 			foreach ( $lines as &$l ) {
@@ -298,6 +387,9 @@ class WSEI_Mapper {
 			'lines'           => $lines,
 			'payment'         => $payment,
 		);
+		if ( ! empty( $vat_amounts ) ) {
+			$body['vat_amounts'] = $vat_amounts;
+		}
 		if ( $paid ) {
 			$body['prepaid_amount'] = round( (float) $order->get_total(), 2 );
 		}

@@ -3,7 +3,7 @@
  * Plugin Name:       W System E-Invoice for WooCommerce
  * Plugin URI:        https://wsystem.dev/woocommerce-xrechnung
  * Description:       Creates XRechnung 3.0 and EN 16931 e-invoices (UBL) for WooCommerce orders, validates them against the official rule sets, attaches them to customer emails and can send them over Peppol.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            W System
@@ -21,7 +21,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WSEI_VERSION', '1.0.0' );
+define( 'WSEI_VERSION', '1.0.1' );
 define( 'WSEI_FILE', __FILE__ );
 define( 'WSEI_DIR', plugin_dir_path( __FILE__ ) );
 
