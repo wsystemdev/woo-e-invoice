@@ -37,5 +37,16 @@ ok( ! isset( $b4['vat_amounts'] ) && abs( api_total( $b4 ) - 3.11 ) < 0.001, 're
 // plain net order unchanged
 $b3 = WSEI_Mapper::invoice( order( array( item( 'Service', 3, 100.00, array( 1 => 19.00 ) ) ), array(), 119.00 ) );
 ok( ! isset( $b3['vat_amounts'] ) && 100.0 == round( $b3['lines'][0]['quantity'] * $b3['lines'][0]['unit_price'], 2 ), 'net order unchanged' );
+function api_total_old( $b ) { $c = $b; unset( $c['vat_amounts'] ); return api_total( $c ); }
+// PC-4: 3 x 9.99 (19 %, unreachable) + 4.99 (7 %): 34.96 on APIs with AND without vat_amounts (second pass shifts the 7 % net)
+$b5 = WSEI_Mapper::invoice( order( array( item( 'USB', 3, 25.18, array( 1 => 4.79 ) ), item( 'Buch', 1, 4.66, array( 2 => 0.33 ) ) ), array(), 34.96 ) );
+ok( abs( api_total( $b5 ) - 34.96 ) < 0.001 && abs( api_total_old( $b5 ) - 34.96 ) < 0.001, 'PC-4 34.96 both APIs, got ' . api_total( $b5 ) . ' / ' . api_total_old( $b5 ) );
+// PC-5: 40 x 0.01 gross at 19 % (Woo: net 0.01, tax 0.00 per line): VAT 0.00 as vat_amounts (within 0.005 x 40), total 0.40
+$cent = array(); for ( $i = 0; $i < 40; $i++ ) { $cent[] = item( "S$i", 1, 0.01, array( 1 => 0.0 ) ); }
+$b6 = WSEI_Mapper::invoice( order( $cent, array(), 0.40 ) );
+ok( isset( $b6['vat_amounts'] ) && 0.0 == $b6['vat_amounts'][0]['tax_amount'] && abs( api_total( $b6 ) - 0.40 ) < 0.001, 'PC-5 cent lines: vat_amounts 0.00, total 0.40 got ' . api_total( $b6 ) );
+// PC-3: taxes stacked on the same base (compound) stay one line at the summed rate
+$b7 = WSEI_Mapper::invoice( order( array( item( 'Kompakt', 1, 100.00, array( 1 => 19.00, 2 => 7.00 ) ) ), array(), 126.00 ) );
+ok( 1 === count( $b7['lines'] ) && 26.0 == $b7['lines'][0]['vat_rate'], 'stacked taxes: one line at 26 % ' . json_encode( $b7['lines'] ) );
 echo "$n checks, $fail failed\n";
 exit( $fail ? 1 : 0 );

@@ -86,7 +86,8 @@ Only if you turn it on. Sandbox mode runs the whole flow, including the VAT and 
 
 = 1.0.1 =
 * Fix: shipping and fees taxed at several VAT rates (e.g. split shipping tax with German-market plugins) are now one line per rate; they were written as one line at the sum of the rates (19 % + 7 % = 26 %).
-* Prices incl. VAT: the e-invoice total now equals the order total. Per-line tax rounding is reconciled per VAT rate; where no net amount can reach the VAT WooCommerce charged, it is sent as vat_amounts (used by the W System API once supported, ignored before).
+* Prices incl. VAT: the e-invoice total now equals the order total. Per-line tax rounding is reconciled per VAT rate; where no net amount can reach the VAT WooCommerce charged, it is sent as vat_amounts (used by the W System API once supported, ignored before). If one rate's gross cannot be reached by any net, another rate's net moves by 1-2 cents so the total also matches on API versions without vat_amounts support.
+* Taxes stacked on the same base (compound rates) still add up on one line.
 
 = 1.0.0 =
 * First release: XRechnung 3.0, EN 16931 and Peppol BIS 3 (UBL) from WooCommerce orders, official rule validation, email attachment, download, Leitweg-ID, optional Peppol sending (sandbox and live).

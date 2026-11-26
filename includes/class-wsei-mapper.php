@@ -143,6 +143,17 @@ class WSEI_Mapper {
 				}
 			}
 		}
+		if ( count( $parts ) > 1 ) {
+			// Stacked taxes on the SAME base (e.g. compound or state + local rates) add up: keep one line at the summed rate.
+			// A price SPLIT over rates (bases implied by tax/rate add up to the net) gets one line per rate.
+			$est = array();
+			foreach ( $parts as $p ) {
+				$est[] = $p[1] / ( $p[0] / 100 );
+			}
+			if ( abs( array_sum( $est ) - $net ) >= abs( max( $est ) - $net ) ) {
+				$parts = array();
+			}
+		}
 		if ( count( $parts ) <= 1 ) {
 			$vat = self::vat_of( $item, $rates, $ctx );
 			$tax = 1 === count( $parts ) ? $parts[0][1] : round( (float) $item->get_total_tax(), 2 );
@@ -163,32 +174,33 @@ class WSEI_Mapper {
 	}
 
 	/**
-	 * BET3: per VAT rate, the API computes VAT as base x rate; WooCommerce rounds tax per line. Where they differ by cents, first try
-	 * a net within 3 cents on the last line of that rate that gives the same gross (works with every API version); otherwise send the
-	 * VAT WooCommerce charged as vat_amounts (used once the W System API supports it, ignored before). Keeps the e-invoice total
-	 * equal to the order total.
+	 * BET3 / PC-4 / PC-5 (same rules as the Shopware plugin's reconcile()). WooCommerce rounds tax per line; the API rounds each line
+	 * net to cents (EN 16931) and computes VAT per rate as base x rate. Per rate, where the gross differs, first try a net within 3 cents
+	 * on that rate's last line that reaches the same gross (works with every API version). Second pass: if a rate's gross cannot be
+	 * reached by any net (e.g. 3 x 9.99 incl. 19 %), shift another rate's net by 1-2 cents so the e-invoice total equals the order total
+	 * on today's API. vat_amounts then carries, per rate, the gross WooCommerce charged minus the net sent, wherever base x rate misses it
+	 * and the difference is within the API's per-line rounding bound (0.005 per line, min 0.01, max 0.99). API versions without
+	 * vat_amounts support ignore the field.
 	 */
 	private static function reconcile( array $raw ) {
 		$groups = array();
 		foreach ( $raw as $i => $l ) {
+			$raw[ $i ]['net']   = round( (float) $l['net'], 2 );
+			$raw[ $i ]['gross'] = round( $raw[ $i ]['net'] + ( 'S' === $l['cat'] ? (float) $l['tax'] : 0.0 ), 2 );
 			if ( 'S' === $l['cat'] ) {
 				$groups[ (string) $l['rate'] ][] = $i;
 			}
 		}
-		$va  = array();
-		$tol = max( 0.01, round( 0.005 * count( $raw ), 2 ) );
+		$target = 0.0;
+		foreach ( $raw as $l ) {
+			$target += $l['gross'];
+		}
+		$target = round( $target, 2 );
 		foreach ( $groups as $rate => $idx ) {
-			$r   = (float) $rate;
-			$net = 0.0;
-			$tax = 0.0;
-			foreach ( $idx as $i ) {
-				$net += $raw[ $i ]['net'];
-				$tax += $raw[ $i ]['tax'];
-			}
-			$net   = round( $net, 2 );
-			$tax   = round( $tax, 2 );
-			$gross = round( $net + $tax, 2 );
-			if ( abs( round( $net * $r / 100, 2 ) - $tax ) < 0.001 ) {
+			$r     = (float) $rate;
+			$net   = self::gsum( $raw, $idx, 'net' );
+			$gross = self::gsum( $raw, $idx, 'gross' );
+			if ( abs( round( $net + round( $net * $r / 100, 2 ), 2 ) - $gross ) < 0.001 ) {
 				continue;
 			}
 			$best = null;
@@ -199,13 +211,68 @@ class WSEI_Mapper {
 				}
 			}
 			if ( null !== $best ) {
-				$last                 = end( $idx );
-				$raw[ $last ]['net'] = round( $raw[ $last ]['net'] + $best / 100, 2 );
-			} elseif ( abs( round( $net * $r / 100, 2 ) - $tax ) <= $tol + 0.0001 ) {
-				$va[] = array( 'vat_category' => 'S', 'vat_rate' => $r, 'tax_amount' => $tax );
+				$k                = self::last_of( $raw, $idx );
+				$raw[ $k ]['net'] = round( $raw[ $k ]['net'] + $best / 100, 2 );
+			}
+		}
+		if ( abs( self::api_total( $raw ) - $target ) > 0.001 ) {
+			foreach ( array( 1, -1, 2, -2 ) as $d ) {
+				foreach ( $groups as $idx ) {
+					$k                = self::last_of( $raw, $idx );
+					$try              = $raw;
+					$try[ $k ]['net'] = round( $try[ $k ]['net'] + $d / 100, 2 );
+					if ( abs( self::api_total( $try ) - $target ) < 0.001 ) {
+						$raw = $try;
+						break 2;
+					}
+				}
+			}
+		}
+		$va  = array();
+		$tol = min( 0.99, max( 0.01, round( 0.005 * count( $raw ), 2 ) ) );
+		foreach ( $groups as $rate => $idx ) {
+			$net     = self::gsum( $raw, $idx, 'net' );
+			$charged = round( self::gsum( $raw, $idx, 'gross' ) - $net, 2 );
+			$calc    = round( $net * (float) $rate / 100, 2 );
+			if ( abs( $charged - $calc ) > 0.001 && abs( $charged - $calc ) <= $tol + 0.0001 ) {
+				$va[] = array( 'vat_category' => 'S', 'vat_rate' => (float) $rate, 'tax_amount' => $charged );
 			}
 		}
 		return array( $raw, $va );
+	}
+
+	private static function gsum( array $raw, array $idx, $f ) {
+		$t = 0.0;
+		foreach ( $idx as $i ) {
+			$t += $raw[ $i ][ $f ];
+		}
+		return round( $t, 2 );
+	}
+
+	/** Line that absorbs a cent shift: the last quantity-1 line of the rate (keeps unit prices exact), else the last line. */
+	private static function last_of( array $raw, array $idx ) {
+		$k = end( $idx );
+		foreach ( $idx as $i ) {
+			if ( 1.0 === abs( (float) $raw[ $i ]['qty'] ) ) {
+				$k = $i;
+			}
+		}
+		return $k;
+	}
+
+	/** Total the API computes: line nets rounded to cents, VAT per category and rate on the summed net. */
+	private static function api_total( array $raw ) {
+		$by = array();
+		foreach ( $raw as $l ) {
+			$k        = $l['cat'] . '|' . ( 'S' === $l['cat'] ? $l['rate'] : 0 );
+			$by[ $k ] = ( isset( $by[ $k ] ) ? $by[ $k ] : 0.0 ) + round( $l['net'], 2 );
+		}
+		$t = 0.0;
+		foreach ( $by as $k => $net ) {
+			$net = round( $net, 2 );
+			$t  += $net + round( $net * (float) explode( '|', $k )[1] / 100, 2 );
+		}
+		return round( $t, 2 );
 	}
 
 	private static function line( $desc, $qty, $net, array $vat, $sku = '' ) {
