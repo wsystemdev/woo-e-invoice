@@ -153,13 +153,14 @@ class WSEI_Mapper {
 				$est[] = $p[1] / ( $p[0] / 100 );
 			}
 			$stacked = true;
-			foreach ( $est as $e ) {
-				if ( abs( $e - $net ) > 0.05 ) {
+			foreach ( $est as $k => $e ) {
+				// each implied base must equal the full net within that tax's own cent rounding
+				if ( abs( $e - $net ) > 0.005 / ( $parts[ $k ][0] / 100 ) + 0.011 ) {
 					$stacked = false;
 					break;
 				}
 			}
-			if ( ! $stacked || abs( array_sum( $est ) - $net * count( $parts ) ) > 0.10 ) {
+			if ( ! $stacked ) {
 				// split: keep $parts
 			} else {
 				$parts = array();

@@ -7,7 +7,7 @@ function wc_format_decimal( $v ) { return rtrim( rtrim( number_format( (float) $
 function apply_filters( $tag, $v ) { return $v; }
 function current_time( $f ) { return '2026-11-26'; }
 class WSEI_Settings { public static $o = array( 'seller_country' => 'DE', 'seller_name' => 'Shop GmbH', 'seller_iban' => '', 'format' => 'xrechnung', 'vat_meta_keys' => '', 'small_business' => 'no' ); public static function get( $k ) { return isset( self::$o[ $k ] ) ? self::$o[ $k ] : ''; } }
-class WC_Tax { public static function get_rate_percent_value( $id ) { return array( 1 => 19, 2 => 7 )[ $id ]; } }
+class WC_Tax { public static $rates = array( 1 => 19, 2 => 7 ); public static function get_rate_percent_value( $id ) { return self::$rates[ $id ]; } }
 class T_Item { public $a; public function __construct( $a ) { $this->a = $a; } public function __call( $m, $x ) { $k = substr( $m, 4 ); return isset( $this->a[ $k ] ) ? $this->a[ $k ] : null; } }
 class T_Tax { public $id; public $p; public function __construct( $id, $p ) { $this->id = $id; $this->p = $p; } public function get_rate_id() { return $this->id; } public function get_rate_percent() { return $this->p; } }
 class T_Order { public $a; public $i; public function __construct( $a, $i ) { $this->a = $a; $this->i = $i; } public function get_items( $t ) { return isset( $this->i[ $t ] ) ? $this->i[ $t ] : array(); } public function get_meta( $k ) { return ''; } public function is_paid() { return true; } public function get_date_paid() { return null; } public function __call( $m, $x ) { $k = substr( $m, 4 ); return isset( $this->a[ $k ] ) ? $this->a[ $k ] : ''; } }
@@ -15,7 +15,7 @@ require __DIR__ . '/../includes/class-wsei-mapper.php';
 $fail = 0; $n = 0;
 function ok( $c, $m ) { global $fail, $n; $n++; if ( ! $c ) { $fail++; echo "FAIL: $m\n"; } }
 function item( $name, $qty, $net, array $taxes ) { return new T_Item( array( 'name' => $name, 'quantity' => $qty, 'total' => $net, 'total_tax' => array_sum( $taxes ), 'taxes' => array( 'total' => $taxes ), 'product' => null ) ); }
-function order( array $lines, array $ship, $total ) { return new T_Order( array( 'billing_country' => 'DE', 'billing_company' => 'Kunde GmbH', 'order_number' => '42', 'currency' => 'EUR', 'total' => $total, 'payment_method' => 'ppcp' ), array( 'line_item' => $lines, 'shipping' => $ship, 'tax' => array( new T_Tax( 1, 19 ), new T_Tax( 2, 7 ) ) ) ); }
+function order( array $lines, array $ship, $total ) { $taxes = array(); foreach ( WC_Tax::$rates as $id => $p ) { $taxes[] = new T_Tax( $id, $p ); } return new T_Order( array( 'billing_country' => 'DE', 'billing_company' => 'Kunde GmbH', 'order_number' => '42', 'currency' => 'EUR', 'total' => $total, 'payment_method' => 'ppcp' ), array( 'line_item' => $lines, 'shipping' => $ship, 'tax' => $taxes ) ); }
 function api_total( $b ) { $by = array(); foreach ( $b['lines'] as $l ) { $k = (string) $l['vat_rate']; $by[ $k ] = ( isset( $by[ $k ] ) ? $by[ $k ] : 0 ) + round( $l['quantity'] * $l['unit_price'], 2 ); } $ov = array(); foreach ( isset( $b['vat_amounts'] ) ? $b['vat_amounts'] : array() as $v ) { $ov[ (string) $v['vat_rate'] ] = $v['tax_amount']; } $t = 0; foreach ( $by as $r => $x ) { $x = round( $x, 2 ); $t += $x + ( isset( $ov[ $r ] ) ? $ov[ $r ] : round( $x * (float) $r / 100, 2 ) ); } return round( $t, 2 ); }
 
 // shipping taxed at two rates (German-market split) must become two lines, not one line at 26 %
@@ -56,5 +56,33 @@ $b8 = WSEI_Mapper::invoice( order(
 $sr = array(); foreach ( $b8['lines'] as $l ) { if ( false !== strpos( $l['description'], 'DHL' ) ) { $sr[] = $l['vat_rate']; } }
 ok( ! in_array( 26.0, $sr, true ) && 2 === count( $sr ), 'PC-11 shipping split keeps 0.00-tax share: ' . json_encode( $sr ) );
 ok( abs( api_total( $b8 ) - 19.43 ) < 0.001, 'PC-11 total 19.43 got ' . api_total( $b8 ) );
+// 187.43 net with stacked 6 % + 1 % must stay one line; shop total 200.55 (was mis-split to 194.00)
+WC_Tax::$rates[3] = 6;
+WC_Tax::$rates[4] = 1;
+$b9 = WSEI_Mapper::invoice( order( array( item( 'Good', 1, 187.43, array( 3 => 11.25, 4 => 1.87 ) ) ), array(), 200.55 ) );
+ok( 1 === count( $b9['lines'] ) && abs( $b9['lines'][0]['vat_rate'] - 7.0 ) < 0.001, '187.43 stacked 6+1: one line at 7 %, got ' . json_encode( $b9['lines'] ) );
+ok( abs( api_total( $b9 ) - 200.55 ) < 0.001, '187.43 stacked total 200.55 got ' . api_total( $b9 ) );
+// random stacked fuzz: every implied-base pair stays one line, 0 mis-splits
+WC_Tax::$rates[5] = 5;
+WC_Tax::$rates[6] = 7;
+WC_Tax::$rates[7] = 6.25;
+WC_Tax::$rates[8] = 2.5;
+$pairs = array( array( 3, 6, 4, 1 ), array( 5, 5, 6, 7 ), array( 7, 6.25, 8, 2.5 ) );
+$mis = 0;
+$N   = 150;
+mt_srand( 20261126 );
+for ( $i = 0; $i < $N; $i++ ) {
+	$pr   = $pairs[ $i % 3 ];
+	$net  = round( 1 + ( mt_rand() / mt_getrandmax() ) * 300, 2 );
+	$t1   = round( $net * $pr[1] / 100, 2 );
+	$t2   = round( $net * $pr[3] / 100, 2 );
+	$gross = round( $net + $t1 + $t2, 2 );
+	$bf   = WSEI_Mapper::invoice( order( array( item( 'X', 1, $net, array( $pr[0] => $t1, $pr[2] => $t2 ) ) ), array(), $gross ) );
+	$sumr = $pr[1] + $pr[3];
+	if ( 1 !== count( $bf['lines'] ) || abs( $bf['lines'][0]['vat_rate'] - $sumr ) > 0.001 || abs( api_total( $bf ) - $gross ) > 0.001 ) {
+		$mis++;
+	}
+}
+ok( 0 === $mis, "stacked fuzz: $mis of $N mis-split" );
 echo "$n checks, $fail failed\n";
 exit( $fail ? 1 : 0 );
