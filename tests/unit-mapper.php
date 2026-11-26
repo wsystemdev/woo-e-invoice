@@ -48,5 +48,13 @@ ok( isset( $b6['vat_amounts'] ) && 0.0 == $b6['vat_amounts'][0]['tax_amount'] &&
 // PC-3: taxes stacked on the same base (compound) stay one line at the summed rate
 $b7 = WSEI_Mapper::invoice( order( array( item( 'Kompakt', 1, 100.00, array( 1 => 19.00, 2 => 7.00 ) ) ), array(), 126.00 ) );
 ok( 1 === count( $b7['lines'] ) && 26.0 == $b7['lines'][0]['vat_rate'], 'stacked taxes: one line at 26 % ' . json_encode( $b7['lines'] ) );
+// PC-11: split shipping with a tiny 7 % share whose tax rounded to 0.00 must stay two lines, not one 26 % line
+$b8 = WSEI_Mapper::invoice( order(
+	array( item( 'Pen', 1, 10.00, array( 1 => 1.90 ) ), item( 'Book', 1, 0.50, array( 2 => 0.04 ) ) ),
+	array( item( 'DHL', 1, 5.88, array( 1 => 1.11, 2 => 0.00 ) ) ),
+	19.43 ) );
+$sr = array(); foreach ( $b8['lines'] as $l ) { if ( false !== strpos( $l['description'], 'DHL' ) ) { $sr[] = $l['vat_rate']; } }
+ok( ! in_array( 26.0, $sr, true ) && 2 === count( $sr ), 'PC-11 shipping split keeps 0.00-tax share: ' . json_encode( $sr ) );
+ok( abs( api_total( $b8 ) - 19.43 ) < 0.001, 'PC-11 total 19.43 got ' . api_total( $b8 ) );
 echo "$n checks, $fail failed\n";
 exit( $fail ? 1 : 0 );

@@ -146,11 +146,22 @@ class WSEI_Mapper {
 		if ( count( $parts ) > 1 ) {
 			// Stacked taxes on the SAME base (e.g. compound or state + local rates) add up: keep one line at the summed rate.
 			// A price SPLIT over rates (bases implied by tax/rate add up to the net) gets one line per rate.
+			// PC-11: a tiny share whose tax rounded to 0.00 has an implied base of 0, so sumEst ≈ maxEst even
+			// though this is a split (not stacked). Treat as stacked only when every implied base is the full net.
 			$est = array();
 			foreach ( $parts as $p ) {
 				$est[] = $p[1] / ( $p[0] / 100 );
 			}
-			if ( abs( array_sum( $est ) - $net ) >= abs( max( $est ) - $net ) ) {
+			$stacked = true;
+			foreach ( $est as $e ) {
+				if ( abs( $e - $net ) > 0.05 ) {
+					$stacked = false;
+					break;
+				}
+			}
+			if ( ! $stacked || abs( array_sum( $est ) - $net * count( $parts ) ) > 0.10 ) {
+				// split: keep $parts
+			} else {
 				$parts = array();
 			}
 		}
