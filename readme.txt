@@ -4,7 +4,7 @@ Tags: xrechnung, e-invoice, e-rechnung, peppol, en 16931
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,10 @@ Only if you turn it on. Sandbox mode runs the whole flow, including the VAT and 
 2. Settings: format, automation, seller details and Peppol.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: a shipping (or fee) share whose tax rounded to 0.00 stays its own VAT-rate line; it is no longer merged into one line at the summed rate (e.g. 26 %).
+* Fix: taxes stacked on the same base (compound rates) are detected with a per-rate cent tolerance, so the e-invoice total matches the order.
 
 = 1.0.1 =
 * Fix: shipping and fees taxed at several VAT rates (e.g. split shipping tax with German-market plugins) are now one line per rate; they were written as one line at the sum of the rates (19 % + 7 % = 26 %).
